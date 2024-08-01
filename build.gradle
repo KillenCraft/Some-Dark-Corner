@@ -1,0 +1,69 @@
+apply plugin: 'base'
+
+def mcVersions = [
+    '1.7.10',
+]
+
+defaultTasks 'packs'
+
+task packs {
+	group = 'Build'
+	description "Builds all versions of the resource pack."
+	dependsOn 'v1_7'
+}
+
+tasks.assemble.dependsOn 'packs'
+
+// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+def fileTreeMap = [:]
+fileTreeMap['common'] = makeTree('common')
+mcVersions.each { it ->
+    fileTreeMap[it] = makeTree(it)
+}
+
+// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+task unpacked_v1_7(type: Copy){
+    includeEmptyDirs = false
+    duplicatesStrategy = 'exclude'
+	from fileTreeMap['1.7.10']
+	from fileTreeMap['common']
+//    exclude excludeList(file('1.7/.exclude'))
+	into "${buildDir}/1.7"
+}
+
+task v1_7(type:Zip) {
+    includeEmptyDirs = false
+    group = 'Build'
+    description "Builds the pack for Minecraft 1.7"
+    archiveAppendix = '1.7.10'
+    archiveBaseName = 'Some-Dark-Corner'
+
+	from unpacked_v1_7
+//    exclude excludeList(file('1.7/.exclude_from_zip'))
+}
+
+// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+def excludeList(File f) {
+    def ignores = []
+    if (f.isFile()) {
+        f.eachLine { line ->
+            //ignore comments and empty lines
+            if (!line.startsWith('#') && !line.isEmpty()) {
+                ignores.add(line)
+            }
+        }
+    }
+    return ignores
+}
+
+def makeTree(dirSpec) {
+    return fileTree(dirSpec) {
+        exclude '**/*.psd'
+        exclude '**/desktop.ini'
+        exclude '.exclude'
+        exclude '.exclude_from_zip'
+    }
+}
