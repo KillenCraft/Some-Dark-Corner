@@ -15,16 +15,13 @@ subprojects {
         includeEmptyDirs = false
         duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 
-        from("assets") {
-            into 'assets'
-        }
+        from(projectDir)
         from(commonDir)
-        from('pack.mcmeta')
         from("${rootProject.projectDir}/CHANGELOG.md")
         from("${rootProject.projectDir}/LICENSE.md")
         into looseDir
 
-        exclude '**/*.psd', '**/desktop.ini', '**/Thumbs.db'
+        exclude '**/*.psd', '**/desktop.ini', '**/Thumbs.db', '**/*.gradle'
     }
 
     // Define a zip task in each subproject
