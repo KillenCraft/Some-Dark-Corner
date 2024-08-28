@@ -69,3 +69,5 @@ gradle-app.setting
 !.vscode/extensions.json
 /.settings/org.eclipse.buildship.core.prefs
 /.project
+# Copies of vanilla files
+todo/
