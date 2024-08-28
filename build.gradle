@@ -1,69 +1,51 @@
-apply plugin: 'base'
+defaultTasks 'assemble'
 
-def mcVersions = [
-    '1.7.10',
-]
+subprojects {
+    apply plugin: 'base'
 
-defaultTasks 'packs'
+    version = rootProject.version
 
-task packs {
-	group = 'Build'
-	description "Builds all versions of the resource pack."
-	dependsOn 'v1_7'
-}
+    // Set a common build directory for all subprojects
+    buildDir = "${rootProject.projectDir}/out"
+    def commonDir = "${rootProject.projectDir}/common"
+    def looseDir = "${buildDir}/loose/${project.name}"
 
-tasks.assemble.dependsOn 'packs'
+    // Define a sync task in each subproject
+    tasks.register('syncLoose', Sync) {
+        includeEmptyDirs = false
+        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 
-// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-def fileTreeMap = [:]
-fileTreeMap['common'] = makeTree('common')
-mcVersions.each { it ->
-    fileTreeMap[it] = makeTree(it)
-}
-
-// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-task unpacked_v1_7(type: Copy){
-    includeEmptyDirs = false
-    duplicatesStrategy = 'exclude'
-	from fileTreeMap['1.7.10']
-	from fileTreeMap['common']
-//    exclude excludeList(file('1.7/.exclude'))
-	into "${buildDir}/1.7"
-}
-
-task v1_7(type:Zip) {
-    includeEmptyDirs = false
-    group = 'Build'
-    description "Builds the pack for Minecraft 1.7"
-    archiveAppendix = '1.7.10'
-    archiveBaseName = 'Some-Dark-Corner'
-
-	from unpacked_v1_7
-//    exclude excludeList(file('1.7/.exclude_from_zip'))
-}
-
-// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-def excludeList(File f) {
-    def ignores = []
-    if (f.isFile()) {
-        f.eachLine { line ->
-            //ignore comments and empty lines
-            if (!line.startsWith('#') && !line.isEmpty()) {
-                ignores.add(line)
-            }
+        from("assets") {
+            into 'assets'
         }
-    }
-    return ignores
-}
+        from(commonDir)
+        from('pack.mcmeta')
+        from("${rootProject.projectDir}/CHANGELOG.md")
+        from("${rootProject.projectDir}/LICENSE.md")
+        into looseDir
 
-def makeTree(dirSpec) {
-    return fileTree(dirSpec) {
-        exclude '**/*.psd'
-        exclude '**/desktop.ini'
-        exclude '.exclude'
-        exclude '.exclude_from_zip'
+        exclude '**/*.psd', '**/desktop.ini', '**/Thumbs.db'
+    }
+
+    // Define a zip task in each subproject
+    tasks.register('zipPack', Zip) {
+        includeEmptyDirs = false
+        group = 'Build'
+        description = "Builds the resource pack for MC version ${project.name}."
+
+        archiveBaseName.set(rootProject.name)
+        archiveAppendix.set("MC${project.name}")
+        archiveVersion.set("v${rootProject.version}")
+        archiveExtension.set('zip')
+
+        destinationDirectory.set(buildDir)
+
+        from(tasks.named('syncLoose'))
+        dependsOn tasks.named('syncLoose') // Ensure syncLoose runs before zipping
+    }
+
+    // Add the zip task to the default tasks
+    tasks.named('assemble').configure {
+        dependsOn tasks.named('zipPack')
     }
 }

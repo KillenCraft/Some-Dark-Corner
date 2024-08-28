@@ -1,0 +1,3 @@
+rootProject.name = 'Some-Dark-Corner'
+
+include '1.6.1-1.8.9'
