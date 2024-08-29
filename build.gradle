@@ -7,20 +7,29 @@ subprojects {
 
     // Set a common build directory for all subprojects
     buildDir = "${rootProject.projectDir}/out"
-    def commonDir = "${rootProject.projectDir}/common"
-    def looseDir = "${buildDir}/loose/${project.name}"
+
+    // Define variables for common directory, loose directory, and root project files
+    def commonDir = "${rootProject.projectDir}/${project.findProperty('commonDir') ?: 'common'}"
+    def looseDir = "${buildDir}/${project.findProperty('looseDir') ?: 'loose'}/${project.name}"
+    def rootProjectFiles = project.findProperty('rootProjectFiles')?.split(',') ?: []
 
     // Define a sync task in each subproject
     tasks.register('syncLoose', Sync) {
         includeEmptyDirs = false
         duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 
+        // Include files from the project directory
         from(projectDir)
+        // Include files from the common directory
         from(commonDir)
-        from("${rootProject.projectDir}/CHANGELOG.md")
-        from("${rootProject.projectDir}/LICENSE.md")
+        // Include files specified in the rootProjectFiles property
+        rootProjectFiles.each { fileName ->
+            from("${rootProject.projectDir}/${fileName.trim()}")
+        }
+        // Set the destination directory for the sync task
         into looseDir
 
+        // Exclude unnecessary files
         exclude '**/*.psd', '**/desktop.ini', '**/Thumbs.db', '**/*.gradle'
     }
 
@@ -30,15 +39,19 @@ subprojects {
         group = 'Build'
         description = "Builds the resource pack for MC version ${project.name}."
 
+        // Set the output file name "$rootProjectName-MC$projectName-v$rootProjectVersion.zip"
         archiveBaseName.set(rootProject.name)
         archiveAppendix.set("MC${project.name}")
         archiveVersion.set("v${rootProject.version}")
         archiveExtension.set('zip')
 
+        // Set the destination directory for the zip task
         destinationDirectory.set(buildDir)
 
+        // Include the output of the syncLoose task
         from(tasks.named('syncLoose'))
-        dependsOn tasks.named('syncLoose') // Ensure syncLoose runs before zipping
+        // Ensure syncLoose runs before zipping
+        dependsOn tasks.named('syncLoose')
     }
 
     // Add the zip task to the default tasks
