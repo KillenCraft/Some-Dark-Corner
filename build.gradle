@@ -12,6 +12,7 @@ subprojects {
     def commonDir = "${rootProject.projectDir}/${project.findProperty('commonDir') ?: 'common'}"
     def looseDir = "${buildDir}/${project.findProperty('looseDir') ?: 'loose'}/${project.name}"
     def rootProjectFiles = project.findProperty('rootProjectFiles')?.split(',') ?: []
+    def excludePatterns = project.findProperty('excludePatterns')?.split(',') ?: []
 
     // Define a sync task in each subproject
     tasks.register('syncLoose', Sync) {
@@ -30,7 +31,9 @@ subprojects {
         into looseDir
 
         // Exclude unnecessary files
-        exclude '**/*.psd', '**/desktop.ini', '**/Thumbs.db', '**/*.gradle'
+        excludePatterns.each { pattern ->
+            exclude pattern.trim()
+        }
     }
 
     // Define a zip task in each subproject
