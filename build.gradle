@@ -44,8 +44,9 @@ subprojects {
 
         // Set the output file name "$rootProjectName-MC$projectName-v$rootProjectVersion.zip"
         archiveBaseName.set(rootProject.name)
-        archiveAppendix.set("MC${project.name}")
-        archiveVersion.set("v${rootProject.version}")
+        archiveAppendix.set(project.findProperty('archiveAppendix') ?: "MC${project.name}")
+        archiveVersion.set(project.findProperty('archiveVersion') ?: "v${rootProject.version}")
+        archiveClassifier.set(project.findProperty('archiveClassifier') ?: '')
         archiveExtension.set('zip')
 
         // Set the destination directory for the zip task
