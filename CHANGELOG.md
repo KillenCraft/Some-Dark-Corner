@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](//semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [1.0.0]
+
 - Add MC1.7.10 vanilla GUIs
 - Add GUIs for the 1.7.10 version of theses mods:
   - Crafting Tweaks
