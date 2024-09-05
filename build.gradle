@@ -1,4 +1,4 @@
-defaultTasks 'assemble'
+defaultTasks 'build'
 
 subprojects {
     apply plugin: 'base'
@@ -10,14 +10,21 @@ subprojects {
 
     // Define variables for common directory, loose directory, and root project files
     def commonDir = "${rootProject.projectDir}/${project.findProperty('commonDir') ?: 'common'}"
-    def looseDir = "${buildDir}/${project.findProperty('looseDir') ?: 'loose'}/${project.name}"
     def rootProjectFiles = project.findProperty('rootProjectFiles')?.split(',') ?: []
     def excludePatterns = project.findProperty('excludePatterns')?.split(',') ?: []
 
     // Define a sync task in each subproject
-    tasks.register('syncLoose', Sync) {
+    tasks.register('zipPack', Zip) {
         includeEmptyDirs = false
         duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+        group = 'Build'
+        description = "Builds the resource pack for MC version ${project.name}."
+
+        // Set the output file name and location
+        destinationDirectory.set(buildDir)
+        archiveBaseName = rootProject.name
+        archiveAppendix.set(project.findProperty('archiveAppendix') ?: "MC${project.name}")
+
 
         // Include files from the project directory
         from(projectDir)
@@ -27,35 +34,11 @@ subprojects {
         rootProjectFiles.each { fileName ->
             from("${rootProject.projectDir}/${fileName.trim()}")
         }
-        // Set the destination directory for the sync task
-        into looseDir
 
         // Exclude unnecessary files
         excludePatterns.each { pattern ->
             exclude pattern.trim()
         }
-    }
-
-    // Define a zip task in each subproject
-    tasks.register('zipPack', Zip) {
-        includeEmptyDirs = false
-        group = 'Build'
-        description = "Builds the resource pack for MC version ${project.name}."
-
-        // Set the output file name "$rootProjectName-MC$projectName-v$rootProjectVersion.zip"
-        archiveBaseName.set(rootProject.name)
-        archiveAppendix.set(project.findProperty('archiveAppendix') ?: "MC${project.name}")
-        archiveVersion.set(project.findProperty('archiveVersion') ?: "v${rootProject.version}")
-        archiveClassifier.set(project.findProperty('archiveClassifier') ?: '')
-        archiveExtension.set('zip')
-
-        // Set the destination directory for the zip task
-        destinationDirectory.set(buildDir)
-
-        // Include the output of the syncLoose task
-        from(tasks.named('syncLoose'))
-        // Ensure syncLoose runs before zipping
-        dependsOn tasks.named('syncLoose')
     }
 
     // Add the zip task to the default tasks
